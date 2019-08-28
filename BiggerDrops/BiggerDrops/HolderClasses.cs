@@ -2,7 +2,7 @@
 
 namespace BiggerDrops {
     public class Settings {
-      
+       public bool experimentalPlayerLance = false;
     }
 
     public class Fields {
