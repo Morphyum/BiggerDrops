@@ -16,18 +16,18 @@ namespace BiggerDrops {
 
     public class Helper {
 
-        public static Settings LoadSettings() {
-            try {
-                using (StreamReader r = new StreamReader($"{BiggerDrops.ModDirectory}/settings.json")) {
-                    string json = r.ReadToEnd();
-                    return JsonConvert.DeserializeObject<Settings>(json);
-                }
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex);
-                return null;
-            }
-        }
+        //public static Settings LoadSettings() {
+        //    try {
+        //        using (StreamReader r = new StreamReader($"{BiggerDrops.ModDirectory}/settings.json")) {
+        //            string json = r.ReadToEnd();
+        //            return JsonConvert.DeserializeObject<Settings>(json);
+        //        }
+        //    }
+        //    catch (Exception ex) {
+        //        Logger.LogError(ex);
+        //        return null;
+        //    }
+        //}
 
         public static void SaveState(string instanceGUID, DateTime saveTime) {
             try {
