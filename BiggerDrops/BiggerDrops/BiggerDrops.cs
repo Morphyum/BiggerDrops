@@ -9,6 +9,7 @@ namespace BiggerDrops {
     internal static string ModDirectory;
     public static Settings settings;
     public static void Init(string directory, string settingsJSON) {
+      BiggerDrops.ModDirectory = directory;
       Logger.BaseDirectory = directory;
       try {
         settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(Path.Combine(directory,"settings.json")));
@@ -19,9 +20,13 @@ namespace BiggerDrops {
         Logger.InitLog();
         Logger.M.TWL(0, "BiggerDrop log init exception "+e.ToString(), true);
       }
-      var harmony = HarmonyInstance.Create("de.morphyum.BiggerDrops");
-      harmony.PatchAll(Assembly.GetExecutingAssembly());
-      ModDirectory = directory;
+      try {
+        var harmony = HarmonyInstance.Create("de.morphyum.BiggerDrops");
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        ModDirectory = directory;
+      } catch (Exception e) {
+        Logger.M.TWL(0, e.ToString());
+      }
     }
   }
 }
