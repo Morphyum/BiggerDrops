@@ -25,12 +25,86 @@ namespace BiggerDrops {
       Helper.LoadState(save.InstanceGUID, save.SaveTime);
     }
   }
-
   [HarmonyPatch(typeof(SGCmdCenterLanceConfigBG), "OnAddedToHierarchy")]
   public static class SGCmdCenterLanceConfigBG_OnAddedToHierarchy {
     static void Postfix(SGCmdCenterLanceConfigBG __instance) {
+      __instance.LC.UpdateSlotsCount(Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
+    }
+  }
+  [HarmonyPatch(typeof(LancePreviewPanel), "SaveLance")]
+  public static class LancePreviewPanel_SaveLance {
+    static void Prefix(LancePreviewPanel __instance, LanceDef lanceToSave) {
+      Logger.M.TWL(0, "LancePreviewPanel.SaveLance", true);
+      Logger.M.WL(0, lanceToSave.ToJSON(), true);
+    }
+  }
+  [HarmonyPatch(typeof(LancePreviewPanel), "SetData")]
+  public static class LancePreviewPanel_SetData {
+    static void Prefix(LancePreviewPanel __instance, ref int maxUnits) {
       try {
-        GameObject primelayout = __instance.LC.transform.FindRecursive("uixPrfPanel_LC_LanceSlots-Widget-MANAGED").gameObject;
+        maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
+        if (__instance.loadoutSlots.Length >= maxUnits) { return; }
+        if (__instance.loadoutSlots.Length < 2) { maxUnits = __instance.loadoutSlots.Length; return; };
+        float ydelta = __instance.loadoutSlots[1].GetComponent<RectTransform>().localPosition.y - __instance.loadoutSlots[0].GetComponent<RectTransform>().localPosition.y;
+        int addUnits = maxUnits - __instance.loadoutSlots.Length;
+        GameObject srcLayout = __instance.loadoutSlots[__instance.loadoutSlots.Length - 1].gameObject;
+        List<LanceLoadoutSlot> slots = new List<LanceLoadoutSlot>();
+        slots.AddRange(__instance.loadoutSlots);
+        for(int t = 0; t < addUnits; ++t) {
+          GameObject nLayout = GameObject.Instantiate(srcLayout,srcLayout.transform.parent);
+          RectTransform rt = nLayout.GetComponent<RectTransform>();
+          Vector3 pos = rt.localPosition;
+          pos.y = srcLayout.GetComponent<RectTransform>().localPosition.y + (t + 1) * ydelta;
+          rt.localPosition = pos;
+          slots.Add(nLayout.GetComponent<LanceLoadoutSlot>());
+        }
+        __instance.loadoutSlots = slots.ToArray();
+      } catch (Exception e) {
+        Logger.M.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(SkirmishMechBayPanel), "SelectLance")]
+  public static class SkirmishMechBayPanel_SelectLance {
+    static void Prefix(SkirmishMechBayPanel __instance,LanceDef lance) {
+      try {
+        int maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
+        if (lance != null) {
+          maxUnits = lance.LanceUnits.Length;
+        }
+        if (__instance.loadoutSlots.Length >= maxUnits) { return; }
+        if (__instance.loadoutSlots.Length < 2) { maxUnits = __instance.loadoutSlots.Length; return; };
+        float ydelta = __instance.loadoutSlots[1].GetComponent<RectTransform>().localPosition.y - __instance.loadoutSlots[0].GetComponent<RectTransform>().localPosition.y;
+        int addUnits = maxUnits - __instance.loadoutSlots.Length;
+        GameObject srcLayout = __instance.loadoutSlots[__instance.loadoutSlots.Length - 1].gameObject;
+        List<LanceLoadoutSlot> slots = new List<LanceLoadoutSlot>();
+        slots.AddRange(__instance.loadoutSlots);
+        for (int t = 0; t < addUnits; ++t) {
+          GameObject nLayout = GameObject.Instantiate(srcLayout, srcLayout.transform.parent);
+          RectTransform rt = nLayout.GetComponent<RectTransform>();
+          Vector3 pos = rt.localPosition;
+          pos.y = srcLayout.GetComponent<RectTransform>().localPosition.y + (t + 1) * ydelta;
+          rt.localPosition = pos;
+          slots.Add(nLayout.GetComponent<LanceLoadoutSlot>());
+        }
+        __instance.loadoutSlots = slots.ToArray();
+      } catch (Exception e) {
+        Logger.M.TWL(0, e.ToString());
+      }
+    }
+  }
+
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "SetData")]
+  public static class LanceConfiguratorPanel_SetData {
+    public static void UpdateSlotsCount(this LanceConfiguratorPanel panel, int maxUnits) {
+      Logger.M.TWL(0, "LanceConfiguratorPanel.UpdateSlotsCount "+maxUnits);
+      try {
+        LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(panel);
+        if (maxUnits <= loadoutSlots.Length) {
+          Logger.M.TWL(1, "already fixed");
+          return;
+        };
+        GameObject primelayout = panel.transform.FindRecursive("uixPrfPanel_LC_LanceSlots-Widget-MANAGED").gameObject;
         GameObject newLayout = GameObject.Instantiate(primelayout);
         newLayout.transform.parent = primelayout.transform.parent;
         newLayout.name = "AlliedSlots";
@@ -50,59 +124,92 @@ namespace BiggerDrops {
         newLayout.transform.position = new Vector3(650, 83, primelayout.transform.position.z);
         newLayout.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
 
-        GameObject deployButton = __instance.LC.transform.FindRecursive("DeployBttn-layout").gameObject;
+        GameObject deployButton = panel.transform.FindRecursive("DeployBttn-layout").gameObject;
         deployButton.transform.position = new Vector3(1675, 175, deployButton.transform.position.z);
 
-        LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(__instance.LC);
+        //LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(panel);
         List<LanceLoadoutSlot> list = loadoutSlots.ToList();
-        if (BiggerDrops.settings.additinalMechSlots > 0) { list.Add(slot1.GetComponent<LanceLoadoutSlot>()); }
-        if (BiggerDrops.settings.additinalMechSlots > 1) { list.Add(slot2.GetComponent<LanceLoadoutSlot>()); }
-        if (BiggerDrops.settings.additinalMechSlots > 2) { list.Add(slot3.GetComponent<LanceLoadoutSlot>()); }
-        if (BiggerDrops.settings.additinalMechSlots > 3) { list.Add(slot4.GetComponent<LanceLoadoutSlot>()); }
+        int addUnits = maxUnits - Settings.DEFAULT_MECH_SLOTS;
+        if (addUnits > 0) { list.Add(slot1.GetComponent<LanceLoadoutSlot>()); }
+        if (addUnits > 1) { list.Add(slot2.GetComponent<LanceLoadoutSlot>()); }
+        if (addUnits > 2) { list.Add(slot3.GetComponent<LanceLoadoutSlot>()); }
+        if (addUnits > 3) { list.Add(slot4.GetComponent<LanceLoadoutSlot>()); }
         loadoutSlots = list.ToArray<LanceLoadoutSlot>();
-        AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").SetValue(__instance.LC, loadoutSlots);
+        AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").SetValue(panel, loadoutSlots);
 
-        float[] slotMaxTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").GetValue(__instance.LC);
-        float[] slotMinTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").GetValue(__instance.LC);
+        float[] slotMaxTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").GetValue(panel);
+        float[] slotMinTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").GetValue(panel);
         List<float> listMaxTonnages = slotMaxTonnages.ToList();
         List<float> listMinTonnages = slotMinTonnages.ToList();
-        if (BiggerDrops.settings.additinalMechSlots > 0) { listMaxTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 1) { listMaxTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 2) { listMaxTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 3) { listMaxTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 0) { listMinTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 1) { listMinTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 2) { listMinTonnages.Add(-1); }
-        if (BiggerDrops.settings.additinalMechSlots > 3) { listMinTonnages.Add(-1); }
+        if (addUnits > 0) { listMaxTonnages.Add(-1); }
+        if (addUnits > 1) { listMaxTonnages.Add(-1); }
+        if (maxUnits > 2) { listMaxTonnages.Add(-1); }
+        if (addUnits > 3) { listMaxTonnages.Add(-1); }
+        if (addUnits > 0) { listMinTonnages.Add(-1); }
+        if (addUnits > 1) { listMinTonnages.Add(-1); }
+        if (addUnits > 2) { listMinTonnages.Add(-1); }
+        if (addUnits > 3) { listMinTonnages.Add(-1); }
         slotMaxTonnages = listMaxTonnages.ToArray<float>();
         slotMinTonnages = listMinTonnages.ToArray<float>();
-        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").SetValue(__instance.LC, slotMaxTonnages);
-        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").SetValue(__instance.LC, slotMinTonnages);
-
+        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").SetValue(panel, slotMaxTonnages);
+        AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").SetValue(panel, slotMinTonnages);
+        Logger.M.TWL(0, "Skirmish UI fixed");
       } catch (Exception e) {
-        Logger.LogError(e);
+        Logger.M.TWL(0, e.ToString());
       }
     }
-  }
-
-  [HarmonyPatch(typeof(LanceConfiguratorPanel), "SetData")]
-  public static class LanceConfiguratorPanel_SetData {
-    static void Prefix(LanceConfiguratorPanel __instance, ref int maxUnits) {
+    static void Prefix(LanceConfiguratorPanel __instance, ref int maxUnits, Contract contract) {
       try {
-        maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
+        if (contract != null) {
+          maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
+        } else {
+          maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
+          __instance.UpdateSlotsCount(maxUnits);
+          //SkirmishUIFix(__instance,maxUnits);
+        }
       } catch (Exception e) {
-        Logger.LogError(e);
+        Logger.M.TWL(0, e.ToString());
       }
     }
 
     static void Postfix(LanceConfiguratorPanel __instance, Contract contract) {
+      Logger.M.TWL(0, "LanceConfiguratorPanel.SetData postfix");
       try {
+        if (contract == null) {
+          Logger.M.WL(1, "contract is null");
+          //__instance.lanceMaxTonnage = BiggerDrops.settings.defaultMaxTonnage;
+          return;
+        } else
         if (contract.Override.lanceMaxTonnage == -1) {
           __instance.lanceMaxTonnage = BiggerDrops.settings.defaultMaxTonnage;
         }
       } catch (Exception e) {
         Logger.LogError(e);
       }
+    }
+  }
+  [HarmonyPatch(typeof(LanceConfiguratorPanel), "CreateLanceDef")]
+  public static class LanceConfiguratorPanel_CreateLanceDef {
+    static void Prefix(LanceConfiguratorPanel __instance, string lanceId) {
+      LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(__instance);
+      Logger.M.TWL(0, "LanceConfiguratorPanel.CreateLanceDef " + lanceId + " slots:" + loadoutSlots.Length, true);
+    }
+    static void Postfix(LanceConfiguratorPanel __instance, string lanceId, ref LanceDef __result) {
+      LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(__instance);
+      Logger.M.TWL(0, "LanceConfiguratorPanel.CreateLanceDef result:", true);
+      Logger.M.WL(0, __result.ToJSON());
+    }
+  }
+  [HarmonyPatch(typeof(LancePreviewPanel), "OnLanceConfiguratorConfirm")]
+  public static class LancePreviewPanel_OnLanceConfiguratorConfirm {
+    static void Prefix(LancePreviewPanel __instance) {
+      Logger.M.TWL(0, "LancePreviewPanel.OnLanceConfiguratorConfirm", true);
+    }
+  }
+  [HarmonyPatch(typeof(LancePreviewPanel), "OnLanceConfiguratorCancel")]
+  public static class LancePreviewPanel_OnLanceConfiguratorCancel {
+    static void Prefix(LancePreviewPanel __instance) {
+      Logger.M.TWL(0, "LancePreviewPanel.OnLanceConfiguratorCancel", true);
     }
   }
 
@@ -225,15 +332,15 @@ namespace BiggerDrops {
             if (i < Settings.DEFAULT_MECH_SLOTS) {
               lanceConfiguration.AddUnit(__instance.playerGUID, mechDef, pilotDef);
             } else {
-              if (i >= BiggerDrops.settings.additinalMechSlots + Settings.DEFAULT_MECH_SLOTS) { break; }
-              Logger.M.TWL(0, "LanceConfiguratorPanel.CreateLanceConfiguration. Index:"+i+" additional slots border:" + (BiggerDrops.settings.additinalMechSlots + Settings.DEFAULT_MECH_SLOTS)+" player slots border:"+(BiggerDrops.settings.additinalPlayerMechSlots + Settings.DEFAULT_MECH_SLOTS));
+              //if (i >= BiggerDrops.settings.additinalMechSlots + Settings.DEFAULT_MECH_SLOTS) { break; }
+              Logger.M.TWL(0, "LanceConfiguratorPanel.CreateLanceConfiguration. Index:" + i + " additional slots border:" + (BiggerDrops.settings.additinalMechSlots + Settings.DEFAULT_MECH_SLOTS) + " player slots border:" + (BiggerDrops.settings.additinalPlayerMechSlots + Settings.DEFAULT_MECH_SLOTS));
               if (i >= BiggerDrops.settings.additinalPlayerMechSlots + Settings.DEFAULT_MECH_SLOTS) {
                 Fields.callsigns.Add(pilotDef.Description.Callsign);
                 //EMPLOYER ID
                 Logger.M.WL(1, "adding to employer lance " + Settings.EMPLOYER_LANCE_GUID + " mech:" + mechDef.Description.Id + " pilot:" + pilotDef.Description.Id);
                 lanceConfiguration.AddUnit(Settings.EMPLOYER_LANCE_GUID, mechDef, pilotDef);
               } else {
-                Logger.M.WL(1, "adding to player lance "+ __instance.playerGUID+" mech:"+mechDef.Description.Id+" pilot:"+pilotDef.Description.Id);
+                Logger.M.WL(1, "adding to player lance " + __instance.playerGUID + " mech:" + mechDef.Description.Id + " pilot:" + pilotDef.Description.Id);
                 lanceConfiguration.AddUnit(__instance.playerGUID, mechDef, pilotDef);
               }
             }

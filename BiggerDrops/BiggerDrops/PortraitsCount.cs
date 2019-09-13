@@ -23,6 +23,39 @@ namespace BiggerDrops {
     }
   }*/
   [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
+  [HarmonyPatch("SetTrayState")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class Init {
+    public static bool Prefix(CombatHUDMechwarriorTray __instance) {
+      Logger.M.TWL(0, "CombatHUDMechwarriorTray.SetTrayState");
+      try {
+        /*for (int index = 0; index < __instance.PortraitHolders.Length; ++index) {
+          Vector3[] corners = new Vector3[4];
+          RectTransform prectt = __instance.PortraitHolders[index].GetComponent<RectTransform>();
+          prectt.GetLocalCorners(corners);
+          Logger.M.WL(1, "portrait "+ prectt.name+ ":" + __instance.PortraitHolders[index].GetInstanceID() + ". index:" + index + " pos:" +prectt.localPosition+" corners 0:" + corners[0] + " 1:" + corners[1] + " 2:" + corners[2] + " 3:" + corners[3]);
+        }*/
+        if (__instance.PortraitHolders.Length <= 4) { return true; }
+        CombatHUDMoraleBar combatHUDMoraleBar = (CombatHUDMoraleBar)typeof(CombatHUDMechwarriorTray).GetProperty("moraleDisplay", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, new object[0] { });
+        RectTransform rtr = combatHUDMoraleBar.gameObject.GetComponent<RectTransform>();
+        RectTransform prt = __instance.PortraitHolders[0].GetComponent<RectTransform>();
+        Vector3[] pcorners = new Vector3[4];
+        prt.GetLocalCorners(pcorners);
+        Logger.M.WL(0, "portrait corners: bl:" + pcorners[0] + " tl:" + pcorners[1] + " tr:" + pcorners[2] + " br:" + pcorners[3]);
+        Logger.M.WL(0, "moraleDisplay local pos:" + rtr.localPosition);
+        Vector3 pos = rtr.localPosition;
+        pos.x = pcorners[0].x + prt.localPosition.x - 10f;
+        rtr.localPosition = pos;
+        Logger.M.WL(0, "moraleDisplay local pos:" + rtr.localPosition);
+        Logger.M.WL(0, "CombatHUDMechwarriorTray.SetTrayState");
+        combatHUDMoraleBar.gameObject.SetActive(true);
+      } catch(Exception e) {
+        Logger.M.TWL(0, e.ToString());
+      }
+      return true;
+    }
+  }
+  [HarmonyPatch(typeof(CombatHUDMechwarriorTray))]
   [HarmonyPatch("RefreshTeam")]
   [HarmonyPatch(new Type[] { typeof(Team) })]
   [HarmonyPatch(MethodType.Normal)]
@@ -47,7 +80,6 @@ namespace BiggerDrops {
             Portraits[index].DisplayedActor = null;
           }
         }
-        Logger.M.TWL(0,"CombatHUDMechwarriorTray.RefreshTeam");
         return false;
       } catch (Exception e) {
         Logger.LogLine(e.ToString());
@@ -67,12 +99,19 @@ namespace BiggerDrops {
         return true;
       }
       try {
-        if (__instance.PortraitHolders.Length >= (Settings.DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots)) {
+        //int portraitsCount = 8;
+        int portraitsCount = Combat.LocalPlayerTeam.unitCount > (Settings.DEFAULT_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS) ?
+                                                    Settings.DEFAULT_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS : Combat.LocalPlayerTeam.unitCount;
+        if (__instance.PortraitHolders.Length >= portraitsCount) {
           Logger.M.WL(1, "no additional portraits needed");
           return true;
         }
-        GameObject[] portraitHolders = new GameObject[Settings.DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots];
-        HBSDOTweenToggle[] portraitTweens = new HBSDOTweenToggle[Settings.DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots];
+        GameObject[] portraitHolders = new GameObject[portraitsCount];
+        HBSDOTweenToggle[] portraitTweens = new HBSDOTweenToggle[portraitsCount];
+        GameObject layout = __instance.PortraitHolders[0].transform.parent.gameObject;
+        //layout.transform.localScale 
+        //GameObject elayout = GameObject.Instantiate(layout);
+        //elayout.transform.localPosition += Vector3.up * (-30.0f);
         for (int index = 0; index < portraitHolders.Length; ++index) {
           if (index < __instance.PortraitHolders.Length) {
             portraitHolders[index] = __instance.PortraitHolders[index];
@@ -115,6 +154,7 @@ namespace BiggerDrops {
           GameObject newPortraitTweenGO = GameObject.Instantiate(srcPortraitTween.gameObject, srcPortraitTween.gameObject.transform.parent);
           HBSDOTweenToggle newPortraitTween = newPortraitTweenGO.GetComponent<HBSDOTweenToggle>();
           newPortraitTweenGO.transform.localPosition += Vector3.right * diff;
+          newPortraitTween.TweenObjects[0] = portraitHolders[index];
           //Logger.M.WL(1, "tween. index:" + index + " corners 0:" + corners[0] + " 1:" + corners[1] + " 2:" + corners[2] + " 3:" + corners[3]);
           portraitTweens[index] = newPortraitTween;
           //newPortraitTween.GetComponent<RectTransform>().GetWorldCorners(corners);
@@ -146,6 +186,9 @@ namespace BiggerDrops {
             Logger.M.WL(3, component.name + ":" + component.GetType() + ":" + component.GetInstanceID());
           }
         }
+        Logger.M.WL(0, "Moralebar diactivate");
+        CombatHUDMoraleBar combatHUDMoraleBar = (CombatHUDMoraleBar)typeof(CombatHUDMechwarriorTray).GetProperty("moraleDisplay", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance, new object[0] { });
+        combatHUDMoraleBar.gameObject.SetActive(false);
       } catch (Exception e) {
         Logger.M.TWL(0, e.ToString(), true);
       }

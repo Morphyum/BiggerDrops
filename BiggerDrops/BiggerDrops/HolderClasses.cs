@@ -8,6 +8,7 @@ namespace BiggerDrops {
     public static readonly string EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
     public bool debugLog { get; set; }
     public int defaultMaxTonnage { get; set; }
+    public int skirmishMax { get; set; }
     public string additionalLanceName { get; set; }
     public int additinalMechSlots {
       get {
