@@ -28,6 +28,7 @@ namespace BiggerDrops {
   [HarmonyPatch(typeof(SGCmdCenterLanceConfigBG), "OnAddedToHierarchy")]
   public static class SGCmdCenterLanceConfigBG_OnAddedToHierarchy {
     static void Postfix(SGCmdCenterLanceConfigBG __instance) {
+      BiggerDrops.baysAlreadyAdded = 0;
       __instance.LC.UpdateSlotsCount(Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
     }
   }
@@ -130,6 +131,10 @@ namespace BiggerDrops {
         //LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(panel);
         List<LanceLoadoutSlot> list = loadoutSlots.ToList();
         int addUnits = maxUnits - Settings.DEFAULT_MECH_SLOTS;
+        for (int i =0; i < BiggerDrops.baysAlreadyAdded; i++)
+        {
+            list.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+        }
         if (addUnits > 0) { list.Add(slot1.GetComponent<LanceLoadoutSlot>()); }
         if (addUnits > 1) { list.Add(slot2.GetComponent<LanceLoadoutSlot>()); }
         if (addUnits > 2) { list.Add(slot3.GetComponent<LanceLoadoutSlot>()); }
@@ -141,9 +146,14 @@ namespace BiggerDrops {
         float[] slotMinTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").GetValue(panel);
         List<float> listMaxTonnages = slotMaxTonnages.ToList();
         List<float> listMinTonnages = slotMinTonnages.ToList();
+        for (int i = 0; i < BiggerDrops.baysAlreadyAdded; i++)
+        {
+            listMaxTonnages.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+            listMinTonnages.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+        }
         if (addUnits > 0) { listMaxTonnages.Add(-1); }
         if (addUnits > 1) { listMaxTonnages.Add(-1); }
-        if (maxUnits > 2) { listMaxTonnages.Add(-1); }
+        if (addUnits > 2) { listMaxTonnages.Add(-1); }
         if (addUnits > 3) { listMaxTonnages.Add(-1); }
         if (addUnits > 0) { listMinTonnages.Add(-1); }
         if (addUnits > 1) { listMinTonnages.Add(-1); }
@@ -153,6 +163,7 @@ namespace BiggerDrops {
         slotMinTonnages = listMinTonnages.ToArray<float>();
         AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").SetValue(panel, slotMaxTonnages);
         AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").SetValue(panel, slotMinTonnages);
+        BiggerDrops.baysAlreadyAdded = addUnits;
         Logger.M.TWL(0, "Skirmish UI fixed");
       } catch (Exception e) {
         Logger.M.TWL(0, e.ToString());
@@ -162,8 +173,10 @@ namespace BiggerDrops {
       try {
         if (contract != null) {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
-        } else {
+          __instance.UpdateSlotsCount(maxUnits);
+         } else {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
+          BiggerDrops.baysAlreadyAdded = 0;
           __instance.UpdateSlotsCount(maxUnits);
           //SkirmishUIFix(__instance,maxUnits);
         }
@@ -172,8 +185,8 @@ namespace BiggerDrops {
       }
     }
 
-    static void Postfix(LanceConfiguratorPanel __instance, Contract contract) {
-      Logger.M.TWL(0, "LanceConfiguratorPanel.SetData postfix");
+    static void Postfix(LanceConfiguratorPanel __instance, ref int maxUnits, Contract contract) {
+      Logger.M.TWL(0, "LanceConfiguratorPanel.SetData postfix "+maxUnits);
       try {
         if (contract == null) {
           Logger.M.WL(1, "contract is null");
@@ -353,21 +366,45 @@ namespace BiggerDrops {
     }
   }
 
-  /* [HarmonyPatch(typeof(PlayerLanceSpawnerGameLogic), "ContractInitialize")]
-   public static class PlayerLanceSpawnerGameLogic_ContractInitialize {
-       static void Prefix(PlayerLanceSpawnerGameLogic __instance) {
-           try {
-               UnitSpawnPointGameLogic[] unitSpawnPointGameLogicList = __instance.unitSpawnPointGameLogicList;
-               SpawnableUnit[] lanceUnits = __instance.Combat.ActiveContract.Lances.GetLanceUnits("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
-               int num = 1;
-               while (num < lanceUnits.Length && num < unitSpawnPointGameLogicList.Length) {
-                   unitSpawnPointGameLogicList[num].OverrideSpawn(lanceUnits[num]);
-                   num++;
-               }
-           }
-           catch (Exception e) {
-               Logger.LogError(e);
-           }
-       }
-   }*/
+    [HarmonyPatch(typeof(SimGameState), "Rehydrate", typeof(GameInstanceSave))]
+    class SimGameState_RehydratePatch
+    {
+        public static void Postfix(SimGameState __instance, GameInstanceSave gameInstanceSave)
+        {
+            if (BiggerDrops.settings.allowUpgrades)
+            {
+                BiggerDrops.settings.setCompanyStats(__instance.CompanyStats);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SimGameState), "InitCompanyStats")]
+    class SimGameState_InitCompanyStatsPatch
+    {
+        public static void Postfix(SimGameState __instance)
+        {
+            if (BiggerDrops.settings.allowUpgrades)
+            {
+                BiggerDrops.settings.setCompanyStats(__instance.CompanyStats);
+            }
+        }
+    }
+
+    /* [HarmonyPatch(typeof(PlayerLanceSpawnerGameLogic), "ContractInitialize")]
+        public static class PlayerLanceSpawnerGameLogic_ContractInitialize {
+            static void Prefix(PlayerLanceSpawnerGameLogic __instance) {
+                try {
+                    UnitSpawnPointGameLogic[] unitSpawnPointGameLogicList = __instance.unitSpawnPointGameLogicList;
+                    SpawnableUnit[] lanceUnits = __instance.Combat.ActiveContract.Lances.GetLanceUnits("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
+                    int num = 1;
+                    while (num < lanceUnits.Length && num < unitSpawnPointGameLogicList.Length) {
+                        unitSpawnPointGameLogicList[num].OverrideSpawn(lanceUnits[num]);
+                        num++;
+                    }
+                }
+                catch (Exception e) {
+                    Logger.LogError(e);
+                }
+            }
+        }*/
 }
