@@ -15,7 +15,11 @@ namespace BiggerDrops {
     public string additionalLanceName { get; set; }
     public bool allowUpgrades { get; set; }
     public bool showArgoUpgrades { get; set; }
-    public int additinalMechSlots {
+    public string argoUpgradeName { get; set; }
+    public string argoUpgradeCategory1Name { get; set; }
+    public string argoUpgradeCategory2Name { get; set; }
+    public string argoUpgradeCategory3Name { get; set; }
+        public int additinalMechSlots {
       get {
         if (allowUpgrades && companyStats != null)
         {
@@ -75,6 +79,10 @@ namespace BiggerDrops {
       FmaxTonnage = 500;
       allowUpgrades = false;
       showArgoUpgrades = true;
+      argoUpgradeName = "Command & Control";
+      argoUpgradeCategory1Name = "Drop Size";
+      argoUpgradeCategory2Name = "Mech Control";
+      argoUpgradeCategory3Name = "Drop Tonnage";
     }
     
     public void setCompanyStats(StatCollection stats) {
