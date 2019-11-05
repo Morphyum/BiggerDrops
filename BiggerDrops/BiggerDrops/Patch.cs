@@ -397,8 +397,13 @@ namespace BiggerDrops {
     {
         public static void Prefix(SGEngineeringScreen __instance)
         {
+            if (!BiggerDrops.settings.showAdditionalArgoUpgrades)
+            {
+                return;
+            }
             try
             {
+                //This needs to be done by as a prefix to avoid strange bugs with upgrades showing the wrong state
                 if (__instance.transform.FindRecursive("BDUpgradePanel") == null) {
                     GameObject primelayout = __instance.transform.FindRecursive("uixPrbPanl_SystemsAndSupportPanel").gameObject;
                     GameObject newLayout = GameObject.Instantiate(primelayout);
@@ -532,8 +537,13 @@ namespace BiggerDrops {
         }
         public static bool Prefix(SGEngineeringScreen __instance, ShipModuleUpgrade upgrade)
         {
+            if (!BiggerDrops.settings.showAdditionalArgoUpgrades)
+            {
+                return true;
+            }
             try
             {   
+                //Todo: clean this up once ShipUpgradeCategory is made into a dynamic enum
                 if (upgrade.Location != DropshipLocation.UNKNOWN)
                 {
                     return true;

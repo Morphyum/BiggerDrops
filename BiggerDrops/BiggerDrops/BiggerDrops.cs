@@ -10,10 +10,6 @@ namespace BiggerDrops {
     internal static string ModDirectory;
     public static Settings settings;
     public static int baysAlreadyAdded = 0;
-    public static bool argoUpgradesFixed = false;
-    //public static Transform UpgradeList1;
-    //public static Transform UpgradeList2;
-    //public static Transform UpgradeList3;
         public static void Init(string directory, string settingsJSON) {
       BiggerDrops.ModDirectory = directory;
       Logger.BaseDirectory = directory;
