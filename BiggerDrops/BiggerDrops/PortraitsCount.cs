@@ -170,6 +170,7 @@ namespace BiggerDrops {
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
       Logger.M.TWL(0, "CombatHUDMechwarriorTray.Init postfix");
       try {
+        if (__instance.PortraitHolders.Length <= 4) { return; }
         for (int index = 0; index < __instance.PortraitHolders.Length; ++index) {
           Vector3[] corners = new Vector3[4];
           __instance.PortraitHolders[index].GetComponent<RectTransform>().GetWorldCorners(corners);
