@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
+using SVGImporter;
 
 namespace BiggerDrops {
 
@@ -28,6 +30,7 @@ namespace BiggerDrops {
   [HarmonyPatch(typeof(SGCmdCenterLanceConfigBG), "OnAddedToHierarchy")]
   public static class SGCmdCenterLanceConfigBG_OnAddedToHierarchy {
     static void Postfix(SGCmdCenterLanceConfigBG __instance) {
+      BiggerDrops.baysAlreadyAdded = 0;
       __instance.LC.UpdateSlotsCount(Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
     }
   }
@@ -130,6 +133,10 @@ namespace BiggerDrops {
         //LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(panel);
         List<LanceLoadoutSlot> list = loadoutSlots.ToList();
         int addUnits = maxUnits - Settings.DEFAULT_MECH_SLOTS;
+        for (int i =0; i < BiggerDrops.baysAlreadyAdded; i++)
+        {
+            list.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+        }
         if (addUnits > 0) { list.Add(slot1.GetComponent<LanceLoadoutSlot>()); }
         if (addUnits > 1) { list.Add(slot2.GetComponent<LanceLoadoutSlot>()); }
         if (addUnits > 2) { list.Add(slot3.GetComponent<LanceLoadoutSlot>()); }
@@ -141,9 +148,14 @@ namespace BiggerDrops {
         float[] slotMinTonnages = (float[])AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").GetValue(panel);
         List<float> listMaxTonnages = slotMaxTonnages.ToList();
         List<float> listMinTonnages = slotMinTonnages.ToList();
+        for (int i = 0; i < BiggerDrops.baysAlreadyAdded; i++)
+        {
+            listMaxTonnages.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+            listMinTonnages.RemoveAt(Settings.DEFAULT_MECH_SLOTS + i);
+        }
         if (addUnits > 0) { listMaxTonnages.Add(-1); }
         if (addUnits > 1) { listMaxTonnages.Add(-1); }
-        if (maxUnits > 2) { listMaxTonnages.Add(-1); }
+        if (addUnits > 2) { listMaxTonnages.Add(-1); }
         if (addUnits > 3) { listMaxTonnages.Add(-1); }
         if (addUnits > 0) { listMinTonnages.Add(-1); }
         if (addUnits > 1) { listMinTonnages.Add(-1); }
@@ -153,6 +165,7 @@ namespace BiggerDrops {
         slotMinTonnages = listMinTonnages.ToArray<float>();
         AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMaxTonnages").SetValue(panel, slotMaxTonnages);
         AccessTools.Field(typeof(LanceConfiguratorPanel), "slotMinTonnages").SetValue(panel, slotMinTonnages);
+        BiggerDrops.baysAlreadyAdded = addUnits;
         Logger.M.TWL(0, "Skirmish UI fixed");
       } catch (Exception e) {
         Logger.M.TWL(0, e.ToString());
@@ -162,8 +175,10 @@ namespace BiggerDrops {
       try {
         if (contract != null) {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
-        } else {
+          __instance.UpdateSlotsCount(maxUnits);
+         } else {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
+          BiggerDrops.baysAlreadyAdded = 0;
           __instance.UpdateSlotsCount(maxUnits);
           //SkirmishUIFix(__instance,maxUnits);
         }
@@ -172,8 +187,8 @@ namespace BiggerDrops {
       }
     }
 
-    static void Postfix(LanceConfiguratorPanel __instance, Contract contract) {
-      Logger.M.TWL(0, "LanceConfiguratorPanel.SetData postfix");
+    static void Postfix(LanceConfiguratorPanel __instance, ref int maxUnits, Contract contract) {
+      Logger.M.TWL(0, "LanceConfiguratorPanel.SetData postfix "+maxUnits);
       try {
         if (contract == null) {
           Logger.M.WL(1, "contract is null");
@@ -353,21 +368,250 @@ namespace BiggerDrops {
     }
   }
 
-  /* [HarmonyPatch(typeof(PlayerLanceSpawnerGameLogic), "ContractInitialize")]
-   public static class PlayerLanceSpawnerGameLogic_ContractInitialize {
-       static void Prefix(PlayerLanceSpawnerGameLogic __instance) {
-           try {
-               UnitSpawnPointGameLogic[] unitSpawnPointGameLogicList = __instance.unitSpawnPointGameLogicList;
-               SpawnableUnit[] lanceUnits = __instance.Combat.ActiveContract.Lances.GetLanceUnits("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
-               int num = 1;
-               while (num < lanceUnits.Length && num < unitSpawnPointGameLogicList.Length) {
-                   unitSpawnPointGameLogicList[num].OverrideSpawn(lanceUnits[num]);
-                   num++;
-               }
-           }
-           catch (Exception e) {
-               Logger.LogError(e);
-           }
-       }
-   }*/
+    [HarmonyPatch(typeof(SimGameState), "Rehydrate", typeof(GameInstanceSave))]
+    class SimGameState_RehydratePatch
+    {
+        public static void Postfix(SimGameState __instance, GameInstanceSave gameInstanceSave)
+        {
+            if (BiggerDrops.settings.allowUpgrades)
+            {
+                BiggerDrops.settings.setCompanyStats(__instance.CompanyStats);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SimGameState), "InitCompanyStats")]
+    class SimGameState_InitCompanyStatsPatch
+    {
+        public static void Postfix(SimGameState __instance)
+        {
+            if (BiggerDrops.settings.allowUpgrades)
+            {
+                BiggerDrops.settings.setCompanyStats(__instance.CompanyStats);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SGEngineeringScreen), "PopulateUpgradeDictionary")]
+    public static class SGEngineeringScreen_PopulateUpgradeDictionary
+    {
+        public static void Prefix(SGEngineeringScreen __instance)
+        {
+            if (!BiggerDrops.settings.showAdditionalArgoUpgrades)
+            {
+                return;
+            }
+            try
+            {
+                //This needs to be done by as a prefix to avoid strange bugs with upgrades showing the wrong state
+                if (__instance.transform.FindRecursive("BDUpgradePanel") == null) {
+                    GameObject primelayout = __instance.transform.FindRecursive("uixPrbPanl_SystemsAndSupportPanel").gameObject;
+                    GameObject newLayout = GameObject.Instantiate(primelayout);
+                    newLayout.transform.parent = primelayout.transform.parent;
+                    newLayout.name = "BDUpgradePanel";
+                    newLayout.transform.localPosition = new Vector3(-757, 195, 0);
+                    TextMeshProUGUI agroUpgradeText = newLayout.transform.FindRecursive("systemsAndSupport_header").gameObject.GetComponent<TextMeshProUGUI>();
+                    agroUpgradeText.text = BiggerDrops.settings.argoUpgradeName;
+                    TextMeshProUGUI upgrade1Text = newLayout.transform.FindRecursive("text_powerSystem").gameObject.GetComponent<TextMeshProUGUI>();
+                    upgrade1Text.text = BiggerDrops.settings.argoUpgradeCategory1Name;
+                    TextMeshProUGUI upgrade2Text = newLayout.transform.FindRecursive("text_structureSystem").gameObject.GetComponent<TextMeshProUGUI>();
+                    upgrade2Text.text = BiggerDrops.settings.argoUpgradeCategory2Name;
+                    TextMeshProUGUI upgrade3Text = newLayout.transform.FindRecursive("text_driveeSystem").gameObject.GetComponent<TextMeshProUGUI>();
+                    upgrade3Text.text = BiggerDrops.settings.argoUpgradeCategory3Name;
+                    GameObject habitat = newLayout.transform.FindRecursive("HabitatSystem").gameObject;
+                    habitat.name = "BDHabitat";
+                    habitat.SetActive(false);
+                    GameObject driverPipSlots = newLayout.transform.FindRecursive("drivePipSlots").gameObject;
+                    driverPipSlots.name = "BDMechDrops";
+                    GameObject structurePipSlots = newLayout.transform.FindRecursive("structurePipSlots").gameObject;
+                    structurePipSlots.name = "BDMechControl";
+                    GameObject powerPipSlots = newLayout.transform.FindRecursive("powerPipSlots").gameObject;
+                    powerPipSlots.name = "BDDropTonnage";
+
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SGEngineeringScreen), "CleanUpAllUpgradePips")]
+    public static class SGEngineeringScreen_CleanUpAllUpgradePips
+    {
+        public static void Postfix(SGEngineeringScreen __instance)
+        {
+            try
+            {
+                if (__instance.transform.FindRecursive("BDUpgradePanel") != null)
+                {
+                    GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
+                    List<SGEngineeringShipUpgradePip> engineeringShipUpgradePipList = new List<SGEngineeringShipUpgradePip>();
+                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
+                    GameObject structurePipSlots = primelayout.transform.FindRecursive("BDMechControl").gameObject;
+                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
+                    engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)driverPipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
+                    engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)structurePipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
+                    engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)powerPipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
+                    List<ShipModuleUpgrade> available = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "AvailableUpgrades").GetValue(__instance);
+                    List<ShipModuleUpgrade> purchased = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "PurchasedUpgrades").GetValue(__instance);
+                    UIManager uiManager = (UIManager)AccessTools.Field(typeof(SGEngineeringScreen), "uiManager").GetValue(__instance);
+                    foreach (SGEngineeringShipUpgradePip engineeringShipUpgradePip in engineeringShipUpgradePipList)
+                    {
+                        string id = "uixPrfIndc_SIM_argoUpgradePipUnavailable-element";
+
+                        if (available.Contains(engineeringShipUpgradePip.UpgradeModule))
+                            id = "uixPrfIndc_SIM_argoUpgradePipAvailable-element";
+                        else if (purchased.Contains(engineeringShipUpgradePip.UpgradeModule))
+                            id = "uixPrfIndc_SIM_argoUpgradePip-element";
+                        uiManager.dataManager.PoolGameObject(id, engineeringShipUpgradePip.gameObject);
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SGEngineeringScreen), "ClearUpgradePips")]
+    public static class SGEngineeringScreen_ClearUpgradePips
+    {
+        public static void Postfix(SGEngineeringScreen __instance)
+        {
+            try
+            {
+                if (__instance.transform.FindRecursive("BDUpgradePanel") != null)
+                {
+                    GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
+                    List<GameObject> engineeringShipUpgradePipList = new List<GameObject>();
+                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
+                    foreach (Transform transform in driverPipSlots.transform)
+                    {
+                        if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
+                            engineeringShipUpgradePipList.Add(transform.gameObject);
+                    }
+                    GameObject structurePipSlots = primelayout.transform.FindRecursive("BDMechControl").gameObject;
+                    foreach (Transform transform in structurePipSlots.transform)
+                    {
+                        if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
+                            engineeringShipUpgradePipList.Add(transform.gameObject);
+                    }
+                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
+                    foreach (Transform transform in powerPipSlots.transform)
+                    {
+                        if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
+                            engineeringShipUpgradePipList.Add(transform.gameObject);
+                    }
+                    List<ShipModuleUpgrade> available = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "AvailableUpgrades").GetValue(__instance);
+                    List<ShipModuleUpgrade> purchased = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "PurchasedUpgrades").GetValue(__instance);
+                    SimGameState simGame = (SimGameState)AccessTools.Property(typeof(SGEngineeringScreen), "simState").GetValue(__instance);
+                    engineeringShipUpgradePipList.ForEach((Action<GameObject>)(item =>
+                    {
+                        string id = "uixPrfIndc_SIM_argoUpgradePipUnavailable-element";
+                        ShipModuleUpgrade upgradeModule = item.GetComponent<SGEngineeringShipUpgradePip>().UpgradeModule;
+                        if (available.Contains(upgradeModule))
+                            id = "uixPrfIndc_SIM_argoUpgradePipAvailable-element";
+                        else if (purchased.Contains(upgradeModule))
+                            id = "uixPrfIndc_SIM_argoUpgradePip-element";
+                        simGame.DataManager.PoolGameObject(id, item);
+                    }));
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SGEngineeringScreen), "AddUpgradePip")]
+    public static class SGEngineeringScreen_AddUpgradePip
+    {
+        public static void UpgradeSelected(this SGEngineeringScreen screen, ShipModuleUpgrade upgrade)
+        {
+            AccessTools.Method(typeof(SGEngineeringScreen), "OnUpgradeSelected").Invoke(screen, new object[] { upgrade });
+        }
+        public static bool Prefix(SGEngineeringScreen __instance, ShipModuleUpgrade upgrade)
+        {
+            if (!BiggerDrops.settings.showAdditionalArgoUpgrades)
+            {
+                return true;
+            }
+            try
+            {   
+                //Todo: clean this up once ShipUpgradeCategory is made into a dynamic enum
+                if (upgrade.Location != DropshipLocation.UNKNOWN)
+                {
+                    return true;
+                }
+
+                if (__instance.transform.FindRecursive("BDUpgradePanel") != null)
+                {
+                    GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
+                    Transform driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops");
+                    Transform structurePipSlots = primelayout.transform.FindRecursive("BDMechControl");
+                    Transform powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage");
+                    List<ShipModuleUpgrade> available = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "AvailableUpgrades").GetValue(__instance);
+                    List<ShipModuleUpgrade> purchased = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "PurchasedUpgrades").GetValue(__instance);
+                    SimGameState simGame = (SimGameState)AccessTools.Property(typeof(SGEngineeringScreen), "simState").GetValue(__instance);
+                    UIManager uiManager = (UIManager)AccessTools.Field(typeof(SGEngineeringScreen), "uiManager").GetValue(__instance);
+                    Transform parent;
+                    switch (upgrade.Category)
+                    {
+                        case ShipUpgradeCategory.POWER_SYSTEM:
+                            parent = powerPipSlots;
+                            break;
+                        case ShipUpgradeCategory.STRUCTURE:
+                            parent = structurePipSlots;
+                            break;
+                        case ShipUpgradeCategory.DRIVE_SYSTEM:
+                            parent = driverPipSlots;
+                            break;
+                        default:
+                            Debug.LogWarning((object)string.Format("Invalid location ({0}) for ship module {1}", (object)upgrade.Location, (object)upgrade.Description.Id));
+                            return false;
+                    }
+                    string id = "uixPrfIndc_SIM_argoUpgradePipUnavailable-element";
+                    if (available.Contains(upgrade))
+                        id = "uixPrfIndc_SIM_argoUpgradePipAvailable-element";
+                    else if (purchased.Contains(upgrade))
+                        id = "uixPrfIndc_SIM_argoUpgradePip-element";
+                    SGEngineeringShipUpgradePip component = uiManager.dataManager.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, new Vector3?(), new Quaternion?(), parent).GetComponent<SGEngineeringShipUpgradePip>();
+                    component.transform.localScale = Vector3.one;
+                    component.SetUpgadeModule(upgrade);
+                    simGame.RequestItem<SVGAsset>(upgrade.Description.Icon, new Action<SVGAsset>(component.SetIcon), BattleTechResourceType.SVGAsset);
+                    component.OnModuleSelected.RemoveAllListeners();
+                    component.OnModuleSelected.AddListener(new UnityAction<ShipModuleUpgrade>(__instance.UpgradeSelected));
+                }
+      
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+            return false;
+        }
+    }
+
+    /* [HarmonyPatch(typeof(PlayerLanceSpawnerGameLogic), "ContractInitialize")]
+        public static class PlayerLanceSpawnerGameLogic_ContractInitialize {
+            static void Prefix(PlayerLanceSpawnerGameLogic __instance) {
+                try {
+                    UnitSpawnPointGameLogic[] unitSpawnPointGameLogicList = __instance.unitSpawnPointGameLogicList;
+                    SpawnableUnit[] lanceUnits = __instance.Combat.ActiveContract.Lances.GetLanceUnits("ecc8d4f2-74b4-465d-adf6-84445e5dfc230");
+                    int num = 1;
+                    while (num < lanceUnits.Length && num < unitSpawnPointGameLogicList.Length) {
+                        unitSpawnPointGameLogicList[num].OverrideSpawn(lanceUnits[num]);
+                        num++;
+                    }
+                }
+                catch (Exception e) {
+                    Logger.LogError(e);
+                }
+            }
+        }*/
 }

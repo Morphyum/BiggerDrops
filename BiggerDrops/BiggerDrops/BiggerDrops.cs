@@ -3,12 +3,14 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Reflection;
+using UnityEngine;
 
 namespace BiggerDrops {
   public class BiggerDrops {
     internal static string ModDirectory;
     public static Settings settings;
-    public static void Init(string directory, string settingsJSON) {
+    public static int baysAlreadyAdded = 0;
+        public static void Init(string directory, string settingsJSON) {
       BiggerDrops.ModDirectory = directory;
       Logger.BaseDirectory = directory;
       try {
