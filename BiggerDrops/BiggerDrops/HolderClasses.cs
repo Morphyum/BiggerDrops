@@ -33,6 +33,7 @@ namespace BiggerDrops {
         FadditinalMechSlots = value > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : value;
         if (FadditinalPlayerMechSlots == -1) { FadditinalPlayerMechSlots = 0; } else
           if (FadditinalPlayerMechSlots > FadditinalMechSlots) { FadditinalPlayerMechSlots = FadditinalMechSlots; };
+        FdefaultMechSlots = FadditinalMechSlots;
       }
     }
     public int additinalPlayerMechSlots {
@@ -49,6 +50,7 @@ namespace BiggerDrops {
         FadditinalPlayerMechSlots = value > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : value;
         if (FadditinalMechSlots == -1) { FadditinalMechSlots = FadditinalPlayerMechSlots; } else
           if (FadditinalMechSlots < FadditinalPlayerMechSlots) { FadditinalPlayerMechSlots = FadditinalMechSlots; };
+        FdefaultPlayerMechSlots = FadditinalPlayerMechSlots;
       }
     }
     public int defaultMaxTonnage {
@@ -61,6 +63,7 @@ namespace BiggerDrops {
             }
             set {
                 FmaxTonnage = value;
+                FdefaultTonnage = value;
             }
         }
     [JsonIgnore]
@@ -69,6 +72,12 @@ namespace BiggerDrops {
     private int FadditinalPlayerMechSlots;
     [JsonIgnore]
     private int FmaxTonnage;
+    [JsonIgnore]
+    private int FdefaultMechSlots;
+    [JsonIgnore]
+    private int FdefaultPlayerMechSlots;
+    [JsonIgnore]
+    private int FdefaultTonnage;
     [JsonIgnore]
     private StatCollection companyStats;
     public Settings() {
@@ -88,9 +97,9 @@ namespace BiggerDrops {
     public void setCompanyStats(StatCollection stats) {
         companyStats = stats;
             if (allowUpgrades) {
-                if (!companyStats.ContainsStatistic(ADDITIONAL_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_MECH_STAT, FadditinalMechSlots); };
-                if (!companyStats.ContainsStatistic(ADDITIONAL_PLAYER_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_PLAYER_MECH_STAT, FadditinalPlayerMechSlots); };
-                if (!companyStats.ContainsStatistic(MAX_TONNAGE_STAT)) { companyStats.AddStatistic(MAX_TONNAGE_STAT, FmaxTonnage); };
+                if (!companyStats.ContainsStatistic(ADDITIONAL_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_MECH_STAT, FdefaultMechSlots); };
+                if (!companyStats.ContainsStatistic(ADDITIONAL_PLAYER_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_PLAYER_MECH_STAT, FdefaultPlayerMechSlots); };
+                if (!companyStats.ContainsStatistic(MAX_TONNAGE_STAT)) { companyStats.AddStatistic(MAX_TONNAGE_STAT, FdefaultTonnage); };
             }
      }
   }

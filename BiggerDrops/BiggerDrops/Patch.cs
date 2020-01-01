@@ -176,6 +176,13 @@ namespace BiggerDrops {
         if (contract != null) {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
           __instance.UpdateSlotsCount(maxUnits);
+            if(contract.Override != null)
+            {
+                if (contract.Override.maxNumberOfPlayerUnits < 4)
+                    {
+                        maxUnits = contract.Override.maxNumberOfPlayerUnits;
+                    }
+            }
          } else {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
           BiggerDrops.baysAlreadyAdded = 0;
