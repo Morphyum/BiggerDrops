@@ -178,10 +178,15 @@ namespace BiggerDrops {
           __instance.UpdateSlotsCount(maxUnits);
             if(contract.Override != null)
             {
+                if (contract.IsFlashpointContract | contract.IsFlashpointCampaignContract)
+                {
+                    // MC does not function in flashpoints
+                    maxUnits = 4;
+                }
                 if (contract.Override.maxNumberOfPlayerUnits < 4)
-                    {
-                        maxUnits = contract.Override.maxNumberOfPlayerUnits;
-                    }
+                {
+                    maxUnits = contract.Override.maxNumberOfPlayerUnits;
+                }
             }
          } else {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
