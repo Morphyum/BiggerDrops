@@ -434,11 +434,11 @@ namespace BiggerDrops {
                     habitat.name = "BDHabitat";
                     habitat.SetActive(false);
                     GameObject driverPipSlots = newLayout.transform.FindRecursive("drivePipSlots").gameObject;
-                    driverPipSlots.name = "BDMechDrops";
+                    driverPipSlots.name = "BDDropTonnage";
                     GameObject structurePipSlots = newLayout.transform.FindRecursive("structurePipSlots").gameObject;
                     structurePipSlots.name = "BDMechControl";
                     GameObject powerPipSlots = newLayout.transform.FindRecursive("powerPipSlots").gameObject;
-                    powerPipSlots.name = "BDDropTonnage";
+                    powerPipSlots.name = "BDMechDrops";
 
                 }
             }
@@ -460,9 +460,9 @@ namespace BiggerDrops {
                 {
                     GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
                     List<SGEngineeringShipUpgradePip> engineeringShipUpgradePipList = new List<SGEngineeringShipUpgradePip>();
-                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
+                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
                     GameObject structurePipSlots = primelayout.transform.FindRecursive("BDMechControl").gameObject;
-                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
+                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
                     engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)driverPipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
                     engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)structurePipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
                     engineeringShipUpgradePipList.AddRange((IEnumerable<SGEngineeringShipUpgradePip>)powerPipSlots.GetComponentsInChildren<SGEngineeringShipUpgradePip>());
@@ -500,7 +500,7 @@ namespace BiggerDrops {
                 {
                     GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
                     List<GameObject> engineeringShipUpgradePipList = new List<GameObject>();
-                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
+                    GameObject driverPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
                     foreach (Transform transform in driverPipSlots.transform)
                     {
                         if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
@@ -512,7 +512,7 @@ namespace BiggerDrops {
                         if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
                             engineeringShipUpgradePipList.Add(transform.gameObject);
                     }
-                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage").gameObject;
+                    GameObject powerPipSlots = primelayout.transform.FindRecursive("BDMechDrops").gameObject;
                     foreach (Transform transform in powerPipSlots.transform)
                     {
                         if ((UnityEngine.Object)transform.gameObject.GetComponent<SGEngineeringShipUpgradePip>() != (UnityEngine.Object)null)
@@ -555,8 +555,8 @@ namespace BiggerDrops {
             }
             try
             {   
-                //Todo: clean this up once ShipUpgradeCategory is made into a dynamic enum
-                if (upgrade.Location != DropshipLocation.UNKNOWN)
+                //Todo: upgrades at or below this are vanilla
+                if (upgrade.ShipUpgradeCategoryValue.IsVanilla /*upgrade.ShipUpgradeCategoryValue.ID <= ShipUpgradeCategoryEnumeration.GetShipUpgradeCategoryByName("TRAINING").ID*/)
                 {
                     return true;
                 }
@@ -564,28 +564,23 @@ namespace BiggerDrops {
                 if (__instance.transform.FindRecursive("BDUpgradePanel") != null)
                 {
                     GameObject primelayout = __instance.transform.FindRecursive("BDUpgradePanel").gameObject;
-                    Transform driverPipSlots = primelayout.transform.FindRecursive("BDMechDrops");
-                    Transform structurePipSlots = primelayout.transform.FindRecursive("BDMechControl");
-                    Transform powerPipSlots = primelayout.transform.FindRecursive("BDDropTonnage");
+                    Transform BDMechDrops = primelayout.transform.FindRecursive("BDMechDrops");
+                    Transform BDMechControl = primelayout.transform.FindRecursive("BDMechControl");
+                    Transform BDDropTonnage = primelayout.transform.FindRecursive("BDDropTonnage");
                     List<ShipModuleUpgrade> available = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "AvailableUpgrades").GetValue(__instance);
                     List<ShipModuleUpgrade> purchased = (List<ShipModuleUpgrade>)AccessTools.Field(typeof(SGEngineeringScreen), "PurchasedUpgrades").GetValue(__instance);
                     SimGameState simGame = (SimGameState)AccessTools.Property(typeof(SGEngineeringScreen), "simState").GetValue(__instance);
                     UIManager uiManager = (UIManager)AccessTools.Field(typeof(SGEngineeringScreen), "uiManager").GetValue(__instance);
                     Transform parent;
-                    switch (upgrade.Category)
-                    {
-                        case ShipUpgradeCategory.POWER_SYSTEM:
-                            parent = powerPipSlots;
-                            break;
-                        case ShipUpgradeCategory.STRUCTURE:
-                            parent = structurePipSlots;
-                            break;
-                        case ShipUpgradeCategory.DRIVE_SYSTEM:
-                            parent = driverPipSlots;
-                            break;
-                        default:
-                            Debug.LogWarning((object)string.Format("Invalid location ({0}) for ship module {1}", (object)upgrade.Location, (object)upgrade.Description.Id));
-                            return false;
+                    if (upgrade.ShipUpgradeCategoryValue.Name == "BDDropTonnage") {
+                        parent = BDDropTonnage;
+                    } else if (upgrade.ShipUpgradeCategoryValue.Name == "BDMechControl") {
+                        parent = BDMechControl;
+                    } else if (upgrade.ShipUpgradeCategoryValue.Name == "BDMechDrops") { 
+                        parent = BDMechDrops;
+                    } else { 
+                        Debug.LogWarning((object)string.Format("Invalid location ({0}) for ship module {1}", (object)upgrade.Location, (object)upgrade.Description.Id));
+                        return false;
                     }
                     string id = "uixPrfIndc_SIM_argoUpgradePipUnavailable-element";
                     if (available.Contains(upgrade))
