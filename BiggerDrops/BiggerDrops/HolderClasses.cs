@@ -10,7 +10,9 @@ namespace BiggerDrops {
     public static readonly string ADDITIONAL_MECH_STAT = "BiggerDrops_AdditionalMechSlots";
     public static readonly string ADDITIONAL_PLAYER_MECH_STAT = "BiggerDrops_AdditionalPlayerMechSlots";
     public static readonly string MAX_TONNAGE_STAT = "BiggerDrops_MaxTonnage";
+    public static readonly string LANCES_CONFIG_STAT_NAME = "BiggerDrops_LancesLayout";
     public bool debugLog { get; set; }
+    public bool debugLanceLoadout { get; set; }
     public int skirmishMax { get; set; }
     public string additionalLanceName { get; set; }
     public bool allowUpgrades { get; set; }
@@ -73,7 +75,7 @@ namespace BiggerDrops {
     [JsonIgnore]
     private int FmaxTonnage;
     [JsonIgnore]
-    private int FdefaultMechSlots;
+    private int FdefaultMechSlots { get; set; }
     [JsonIgnore]
     private int FdefaultPlayerMechSlots;
     [JsonIgnore]
@@ -82,6 +84,7 @@ namespace BiggerDrops {
     private StatCollection companyStats;
     public Settings() {
       debugLog = false;
+      debugLanceLoadout = false;
       FadditinalMechSlots = -1;
       FadditinalPlayerMechSlots = -1;
       additionalLanceName = "AI LANCE";
@@ -94,12 +97,32 @@ namespace BiggerDrops {
       argoUpgradeCategory3Name = "Drop Tonnage";
     }
     
+    public void UpdateCULances() {
+      if (CustomUnitsAPI.Detected()) {
+        CustomUnitsAPI.setLancesCount(3);
+        if (debugLanceLoadout) {
+          CustomUnitsAPI.setLanceData(0, 6, 5, false);
+          CustomUnitsAPI.setLanceData(1, 4, 4, false);
+          CustomUnitsAPI.setLanceData(2, 4, 2, true);
+          CustomUnitsAPI.setOverallDeployCount(6);
+          CustomUnitsAPI.playerControl(-1, -1);
+        } else {
+          CustomUnitsAPI.setLanceData(0, DEFAULT_MECH_SLOTS, DEFAULT_MECH_SLOTS, false);
+          CustomUnitsAPI.setLanceData(1, DEFAULT_MECH_SLOTS, BiggerDrops.settings.additinalMechSlots, false);
+          CustomUnitsAPI.setLanceData(2, DEFAULT_MECH_SLOTS, BiggerDrops.settings.additinalMechSlots, true);
+          CustomUnitsAPI.setOverallDeployCount(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
+          CustomUnitsAPI.playerControl(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots, BiggerDrops.settings.additinalPlayerMechSlots);
+        }
+      }
+    }
+
     public void setCompanyStats(StatCollection stats) {
         companyStats = stats;
             if (allowUpgrades) {
                 if (!companyStats.ContainsStatistic(ADDITIONAL_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_MECH_STAT, FdefaultMechSlots); };
                 if (!companyStats.ContainsStatistic(ADDITIONAL_PLAYER_MECH_STAT)) { companyStats.AddStatistic(ADDITIONAL_PLAYER_MECH_STAT, FdefaultPlayerMechSlots); };
                 if (!companyStats.ContainsStatistic(MAX_TONNAGE_STAT)) { companyStats.AddStatistic(MAX_TONNAGE_STAT, FdefaultTonnage); };
+                UpdateCULances();
             }
      }
   }

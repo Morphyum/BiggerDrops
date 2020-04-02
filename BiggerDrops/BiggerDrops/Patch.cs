@@ -30,8 +30,10 @@ namespace BiggerDrops {
   [HarmonyPatch(typeof(SGCmdCenterLanceConfigBG), "OnAddedToHierarchy")]
   public static class SGCmdCenterLanceConfigBG_OnAddedToHierarchy {
     static void Postfix(SGCmdCenterLanceConfigBG __instance) {
-      BiggerDrops.baysAlreadyAdded = 0;
-      __instance.LC.UpdateSlotsCount(Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
+      if (CustomUnitsAPI.Detected() == false) {
+        BiggerDrops.baysAlreadyAdded = 0;
+        __instance.LC.UpdateSlotsCount(Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots);
+      }
     }
   }
   [HarmonyPatch(typeof(LancePreviewPanel), "SaveLance")]
@@ -45,6 +47,7 @@ namespace BiggerDrops {
   public static class LancePreviewPanel_SetData {
     static void Prefix(LancePreviewPanel __instance, ref int maxUnits) {
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
         if (__instance.loadoutSlots.Length >= maxUnits) { return; }
         if (__instance.loadoutSlots.Length < 2) { maxUnits = __instance.loadoutSlots.Length; return; };
@@ -71,6 +74,7 @@ namespace BiggerDrops {
   public static class SkirmishMechBayPanel_SelectLance {
     static void Prefix(SkirmishMechBayPanel __instance,LanceDef lance) {
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         int maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + Settings.MAX_ADDITINAL_MECH_SLOTS;
         if (lance != null) {
           maxUnits = lance.LanceUnits.Length;
@@ -102,6 +106,7 @@ namespace BiggerDrops {
     public static void UpdateSlotsCount(this LanceConfiguratorPanel panel, int maxUnits) {
       Logger.M.TWL(0, "LanceConfiguratorPanel.UpdateSlotsCount "+maxUnits);
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         LanceLoadoutSlot[] loadoutSlots = (LanceLoadoutSlot[])AccessTools.Field(typeof(LanceConfiguratorPanel), "loadoutSlots").GetValue(panel);
         if (maxUnits <= loadoutSlots.Length) {
           Logger.M.TWL(1, "already fixed");
@@ -173,6 +178,7 @@ namespace BiggerDrops {
     }
     static void Prefix(LanceConfiguratorPanel __instance, ref int maxUnits, Contract contract) {
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         if (contract != null) {
           maxUnits = Settings.MAX_ADDITINAL_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots;
           __instance.UpdateSlotsCount(maxUnits);
@@ -244,6 +250,7 @@ namespace BiggerDrops {
   public static class Contract_CompleteContract {
     static void Prefix(Contract __instance) {
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         CombatGameState combat = __instance.BattleTechGame.Combat;
         List<Mech> allMechs = combat.AllMechs;
         foreach (Mech mech in allMechs) {
@@ -262,6 +269,7 @@ namespace BiggerDrops {
   public static class AAR_UnitsResult_Screen_InitializeData {
     static bool Prefix(AAR_UnitsResult_Screen __instance, MissionResults mission, SimGameState sim, Contract contract) {
       try {
+        if (CustomUnitsAPI.Detected()) { return true; }
         List<AAR_UnitStatusWidget> UnitWidgets = (List<AAR_UnitStatusWidget>)AccessTools.Field(typeof(AAR_UnitsResult_Screen), "UnitWidgets").GetValue(__instance);
         GameObject nextButton = __instance.transform.FindRecursive("buttonPanel").gameObject;
         nextButton.transform.localPosition = new Vector3(150, 400, 0);
@@ -307,6 +315,7 @@ namespace BiggerDrops {
   public static class AAR_UnitsResult_Screen_FillInData {
     static bool Prefix(AAR_UnitsResult_Screen __instance) {
       try {
+        if (CustomUnitsAPI.Detected()) { return true; }
         Contract theContract = (Contract)AccessTools.Field(typeof(AAR_UnitsResult_Screen), "theContract").GetValue(__instance);
         List<AAR_UnitStatusWidget> UnitWidgets = (List<AAR_UnitStatusWidget>)AccessTools.Field(typeof(AAR_UnitsResult_Screen), "UnitWidgets").GetValue(__instance);
         List<UnitResult> UnitResults = (List<UnitResult>)AccessTools.Field(typeof(AAR_UnitsResult_Screen), "UnitResults").GetValue(__instance);
@@ -343,6 +352,7 @@ namespace BiggerDrops {
 
     static void Postfix(LanceConfiguratorPanel __instance, ref LanceConfiguration __result, LanceLoadoutSlot[] ___loadoutSlots) {
       try {
+        if (CustomUnitsAPI.Detected()) { return; }
         Fields.callsigns.Clear();
         LanceConfiguration lanceConfiguration = new LanceConfiguration();
         for (int i = 0; i < ___loadoutSlots.Length; i++) {
@@ -403,8 +413,24 @@ namespace BiggerDrops {
             }
         }
     }
+    [HarmonyPatch(typeof(SimGameState), "AddArgoUpgrade")]
+    class SimGameState_AddArgoUpgrade {
+      public static void Postfix(SimGameState __instance) {
+        if (BiggerDrops.settings.allowUpgrades) {
+        BiggerDrops.settings.UpdateCULances();
+        }
+      }
+    }
+    [HarmonyPatch(typeof(SimGameState), "ApplyArgoUpgrades")]
+    class SimGameState_ApplyArgoUpgrades {
+      public static void Postfix(SimGameState __instance) {
+        if (BiggerDrops.settings.allowUpgrades) {
+        BiggerDrops.settings.UpdateCULances();
+        }
+      }
+    }
 
-    [HarmonyPatch(typeof(SGEngineeringScreen), "PopulateUpgradeDictionary")]
+  [HarmonyPatch(typeof(SGEngineeringScreen), "PopulateUpgradeDictionary")]
     public static class SGEngineeringScreen_PopulateUpgradeDictionary
     {
         public static void Prefix(SGEngineeringScreen __instance)

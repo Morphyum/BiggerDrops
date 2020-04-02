@@ -29,6 +29,7 @@ namespace BiggerDrops {
     public static bool Prefix(CombatHUDMechwarriorTray __instance) {
       Logger.M.TWL(0, "CombatHUDMechwarriorTray.SetTrayState");
       try {
+        if (CustomUnitsAPI.Detected()) { return true; }
         /*for (int index = 0; index < __instance.PortraitHolders.Length; ++index) {
           Vector3[] corners = new Vector3[4];
           RectTransform prectt = __instance.PortraitHolders[index].GetComponent<RectTransform>();
@@ -62,6 +63,7 @@ namespace BiggerDrops {
   public static class CombatHUDMechwarriorTray_RefreshTeam {
     public static bool Prefix(CombatHUDMechwarriorTray __instance, Team team, CombatGameState ___Combat) {
       try {
+        if (CustomUnitsAPI.Detected()) { return true; }
         //__instance.displayedTeam = team;
         Logger.M.TWL(0, "CombatHUDMechwarriorTray.RefreshTeam team:"+team.DisplayName+ " unitCount:" + team.unitCount);
         foreach(var lance in ___Combat.ActiveContract.Lances.Lances) {
@@ -93,6 +95,7 @@ namespace BiggerDrops {
   [HarmonyPatch(MethodType.Normal)]
   public static class CombatHUDMechwarriorTray_Init {
     public static bool Prefix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
+      if (CustomUnitsAPI.Detected()) { return true; }
       Logger.M.TWL(0,"CombatHUDMechwarriorTray.Init prefix");
       if (BiggerDrops.settings.additinalPlayerMechSlots == 0) {
         Logger.M.WL(1, "no additional portraits needed");
@@ -168,6 +171,7 @@ namespace BiggerDrops {
       }
     }
     public static void Postfix(CombatHUDMechwarriorTray __instance, CombatGameState Combat, CombatHUD HUD) {
+      if (CustomUnitsAPI.Detected()) { return; }
       Logger.M.TWL(0, "CombatHUDMechwarriorTray.Init postfix");
       try {
         if (__instance.PortraitHolders.Length <= 4) { return; }
