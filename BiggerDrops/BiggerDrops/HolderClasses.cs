@@ -14,8 +14,10 @@ namespace BiggerDrops {
     public static readonly string MAX_TONNAGE_STAT = "BiggerDrops_MaxTonnage";
     public static readonly string LANCES_CONFIG_STAT_NAME = "BiggerDrops_LancesLayout";
     public static readonly string CU_VEHICLE_STAT_NAME = "BiggerDrops_CuVehicleCount";
+    public static readonly int MAX_CU_DROP_SIZE = 12;
+    public static readonly int MAX_CU_ADDITINAL_MECH_SLOTS = 8;
 
-    public bool debugLog { get; set; }
+        public bool debugLog { get; set; }
     public bool debugLanceLoadout { get; set; }
     public int skirmishMax { get; set; }
     public string additionalLanceName { get; set; }
@@ -25,7 +27,6 @@ namespace BiggerDrops {
     public string argoUpgradeCategory1Name { get; set; }
     public string argoUpgradeCategory2Name { get; set; }
     public string argoUpgradeCategory3Name { get; set; }
-    public int CuVehicleLances { get; set; }
     public int CuInitialVehicles { get; set; }
 
 
@@ -33,14 +34,16 @@ namespace BiggerDrops {
       get {
         if (allowUpgrades && companyStats != null)
         {
+            int maxSize = CustomUnitsAPI.Detected() ? MAX_CU_ADDITINAL_MECH_SLOTS : MAX_ADDITINAL_MECH_SLOTS;
             int val = companyStats.GetValue<int>(ADDITIONAL_MECH_STAT);
-            FadditinalMechSlots = val > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : val;
+            FadditinalMechSlots = val > maxSize ? maxSize : val;
         }
         if (FadditinalMechSlots < 0) { FadditinalMechSlots = 0; }       
         return FadditinalMechSlots;
       }
       set {
-        FadditinalMechSlots = value > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : value;
+        int maxSize = CustomUnitsAPI.Detected() ? MAX_CU_ADDITINAL_MECH_SLOTS : MAX_ADDITINAL_MECH_SLOTS;
+        FadditinalMechSlots = value > maxSize ? maxSize : value;
         if (FadditinalPlayerMechSlots == -1) { FadditinalPlayerMechSlots = 0; } else
           if (FadditinalPlayerMechSlots > FadditinalMechSlots) { FadditinalPlayerMechSlots = FadditinalMechSlots; };
         FdefaultMechSlots = FadditinalMechSlots;
@@ -50,14 +53,16 @@ namespace BiggerDrops {
       get {
         if (allowUpgrades && companyStats != null)
         {
+            int maxSize = CustomUnitsAPI.Detected() ? MAX_CU_ADDITINAL_MECH_SLOTS : MAX_ADDITINAL_MECH_SLOTS;
             int val = companyStats.GetValue<int>(ADDITIONAL_PLAYER_MECH_STAT);
-            FadditinalPlayerMechSlots = val > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : val;
+            FadditinalPlayerMechSlots = val > maxSize ? maxSize : val;
         }
         if (FadditinalPlayerMechSlots < 0) { FadditinalPlayerMechSlots = 0; }
         return FadditinalPlayerMechSlots;
       }
       set {
-        FadditinalPlayerMechSlots = value > MAX_ADDITINAL_MECH_SLOTS ? MAX_ADDITINAL_MECH_SLOTS : value;
+        int maxSize = CustomUnitsAPI.Detected() ? MAX_CU_ADDITINAL_MECH_SLOTS : MAX_ADDITINAL_MECH_SLOTS;
+        FadditinalPlayerMechSlots = value > maxSize ? maxSize : value;
         if (FadditinalMechSlots == -1) { FadditinalMechSlots = FadditinalPlayerMechSlots; } else
           if (FadditinalMechSlots < FadditinalPlayerMechSlots) { FadditinalPlayerMechSlots = FadditinalMechSlots; };
         FdefaultPlayerMechSlots = FadditinalPlayerMechSlots;
@@ -119,15 +124,24 @@ namespace BiggerDrops {
       argoUpgradeCategory1Name = "Drop Size";
       argoUpgradeCategory2Name = "Mech Control";
       argoUpgradeCategory3Name = "Drop Tonnage";
-      CuVehicleLances = 0;
       CuInitialVehicles = 0;
     }
     
     public void UpdateCULances() {
       if (CustomUnitsAPI.Detected()) {
         int lanceCount = 1;
-        if(BiggerDrops.settings.additinalMechSlots > 0) { lanceCount += 1; };
-        CustomUnitsAPI.setLancesCount(lanceCount + BiggerDrops.settings.CuVehicleLances);
+        int mCount = BiggerDrops.settings.additinalMechSlots;
+        while (mCount > 0)
+        {
+            lanceCount++;
+            mCount -= 4;
+        }
+        int vCount = BiggerDrops.settings.vehicleCount;
+        while (vCount > 0)
+        {
+            lanceCount++;
+            vCount -= 4;
+        }
         if (debugLanceLoadout) {
           CustomUnitsAPI.setLancesCount(3);
           CustomUnitsAPI.setLanceData(0, 6, 5, false);
@@ -136,25 +150,24 @@ namespace BiggerDrops {
           CustomUnitsAPI.setOverallDeployCount(6);
           CustomUnitsAPI.playerControl(-1, -1);
         } else {
+          CustomUnitsAPI.setLancesCount(lanceCount);
           CustomUnitsAPI.setLanceData(0, DEFAULT_MECH_SLOTS, DEFAULT_MECH_SLOTS, false);
           int vStart = 1;
-          if (lanceCount > 1)
-            {
-                CustomUnitsAPI.setLanceData(1, DEFAULT_MECH_SLOTS, BiggerDrops.settings.additinalMechSlots, false);
-                vStart += 1;
-            }
-          for(int i=0; i < BiggerDrops.settings.CuVehicleLances; i++)
-            {
-                int vSlots = BiggerDrops.settings.vehicleCount - (i * DEFAULT_MECH_SLOTS);
-                if (vSlots > DEFAULT_MECH_SLOTS) { vSlots = DEFAULT_MECH_SLOTS; };
-                CustomUnitsAPI.setLanceData(vStart + i, DEFAULT_MECH_SLOTS, vSlots, true);
-               // only setup second vehicle lance if there are enough vehicle slots to require it
-               if(i==0 && BiggerDrops.settings.vehicleCount <= DEFAULT_MECH_SLOTS)
-                {
-                    break;
-                }
-            }
-          CustomUnitsAPI.setOverallDeployCount(System.Math.Max(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots, BiggerDrops.settings.vehicleCount));
+          mCount = BiggerDrops.settings.additinalMechSlots;
+          while (mCount > 0)
+          {
+            CustomUnitsAPI.setLanceData(vStart, DEFAULT_MECH_SLOTS, mCount > DEFAULT_MECH_SLOTS ? DEFAULT_MECH_SLOTS : mCount, false);
+            vStart++;
+            mCount -= 4;          
+           }
+          vCount = BiggerDrops.settings.vehicleCount;
+          while (vCount > 0)
+          {
+            CustomUnitsAPI.setLanceData(vStart, DEFAULT_MECH_SLOTS, vCount > DEFAULT_MECH_SLOTS ? DEFAULT_MECH_SLOTS : vCount, true);
+            vStart++;
+            vCount -= 4;
+          }
+          CustomUnitsAPI.setOverallDeployCount(System.Math.Min(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots + BiggerDrops.settings.vehicleCount, MAX_CU_DROP_SIZE));
           CustomUnitsAPI.playerControl(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots, BiggerDrops.settings.vehicleCount);
         }
       }

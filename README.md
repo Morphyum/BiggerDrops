@@ -18,7 +18,6 @@ Settings
   "argoUpgradeCategory1Name" : "Drop Size", sets the name of the first new upgrade category on upgrades on the argo upgrade screen if enabled
   "argoUpgradeCategory2Name" : "Mech Control", sets the name of the second new upgrade category on upgrades on the argo upgrade screen if enabled
   "argoUpgradeCategory3Name" : "Drop Tonnage" sets the name of the third new upgrade category on upgrades on the argo upgrade screen if enabled
-  "CuVehicleLances" : the number of vehicle lances to setup, max 2 -- Requires CustomUnits
   "CuInitialVehicles" : the initial number of vehicles usable to the player, max 8 -- Requires CustomUnits
 }
 </pre>
