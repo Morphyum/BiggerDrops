@@ -125,7 +125,8 @@ namespace BiggerDrops {
     
     public void UpdateCULances() {
       if (CustomUnitsAPI.Detected()) {
-        int lanceCount = (DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots) / DEFAULT_MECH_SLOTS;
+        int lanceCount = 1;
+        if(BiggerDrops.settings.additinalMechSlots > 0) { lanceCount += 1; };
         CustomUnitsAPI.setLancesCount(lanceCount + BiggerDrops.settings.CuVehicleLances);
         if (debugLanceLoadout) {
           CustomUnitsAPI.setLancesCount(3);
