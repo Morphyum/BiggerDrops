@@ -19,5 +19,7 @@ Settings
   "argoUpgradeCategory2Name" : "Mech Control", sets the name of the second new upgrade category on upgrades on the argo upgrade screen if enabled
   "argoUpgradeCategory3Name" : "Drop Tonnage" sets the name of the third new upgrade category on upgrades on the argo upgrade screen if enabled
   "CuInitialVehicles" : the initial number of vehicles usable to the player, max 8 -- Requires CustomUnits
+  "respectFourDropLimit" : When set to true, contracts max units must be set to -1 or that unit count will be enforced (by default for most contracts is 4), contracts that limit you to less than 4 mechs will be restricted regardless of this setting
+  "limitFlashpointDrop" : When set to true (the default) flashpoint drops are limited to 4 mechs, setting this to false will allow more to drop (only if MC is also setup to allow for this)
 }
 </pre>
