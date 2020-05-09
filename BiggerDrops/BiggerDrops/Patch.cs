@@ -112,10 +112,20 @@ namespace BiggerDrops {
           Logger.M.TWL(1, "already fixed");
           return;
         };
+        Transform newLayoutTransform = panel.transform.FindRecursive("AlliedSlots");
+        GameObject newLayout;
         GameObject primelayout = panel.transform.FindRecursive("uixPrfPanel_LC_LanceSlots-Widget-MANAGED").gameObject;
-        GameObject newLayout = GameObject.Instantiate(primelayout);
-        newLayout.transform.parent = primelayout.transform.parent;
-        newLayout.name = "AlliedSlots";
+        if (newLayoutTransform == null)
+        {
+            
+            newLayout = GameObject.Instantiate(primelayout);
+            newLayout.transform.parent = primelayout.transform.parent;
+            newLayout.name = "AlliedSlots";
+        }
+        else
+        {
+            newLayout = newLayoutTransform.gameObject;
+        }
         GameObject slot1 = newLayout.transform.FindRecursive("lanceSlot1").gameObject;
         GameObject slot2 = newLayout.transform.FindRecursive("lanceSlot2").gameObject;
         GameObject slot3 = newLayout.transform.FindRecursive("lanceSlot3").gameObject;
@@ -186,12 +196,24 @@ namespace BiggerDrops {
             {
                 if (contract.IsFlashpointContract | contract.IsFlashpointCampaignContract)
                 {
-                    // MC does not function in flashpoints
-                    maxUnits = 4;
+                    if (BiggerDrops.settings.limitFlashpointDrop)
+                    {
+                        maxUnits = 4;
+                    }
                 }
-                if (contract.Override.maxNumberOfPlayerUnits < 4)
+                if (BiggerDrops.settings.respectFourDropLimit)
                 {
-                    maxUnits = contract.Override.maxNumberOfPlayerUnits;
+                    if (contract.Override.maxNumberOfPlayerUnits != -1)
+                    {
+                        maxUnits = contract.Override.maxNumberOfPlayerUnits;
+                    }
+                }
+                else
+                {
+                    if (contract.Override.maxNumberOfPlayerUnits < 4)
+                    {
+                        maxUnits = contract.Override.maxNumberOfPlayerUnits;
+                    }
                 }
             }
          } else {

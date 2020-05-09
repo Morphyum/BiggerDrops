@@ -28,6 +28,8 @@ namespace BiggerDrops {
     public string argoUpgradeCategory2Name { get; set; }
     public string argoUpgradeCategory3Name { get; set; }
     public int CuInitialVehicles { get; set; }
+    public bool respectFourDropLimit {get; set;}
+    public bool limitFlashpointDrop {get; set;}
 
 
     public int additinalMechSlots {
@@ -125,6 +127,8 @@ namespace BiggerDrops {
       argoUpgradeCategory2Name = "Mech Control";
       argoUpgradeCategory3Name = "Drop Tonnage";
       CuInitialVehicles = 0;
+      limitFlashpointDrop = true;
+      respectFourDropLimit = false;
     }
     
     public void UpdateCULances() {
