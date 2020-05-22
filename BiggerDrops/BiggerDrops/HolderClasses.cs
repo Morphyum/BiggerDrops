@@ -6,7 +6,7 @@ namespace BiggerDrops {
   public class Settings {
 
     public static readonly int MAX_ADDITINAL_MECH_SLOTS = 4;
-    public static readonly int MAX_VEHICLE_SLOTS = 8;
+    public int MAX_VEHICLE_SLOTS = 8;
     public static readonly int DEFAULT_MECH_SLOTS = 4;
     public static readonly string EMPLOYER_LANCE_GUID = "ecc8d4f2-74b4-465d-adf6-84445e5dfc230";
     public static readonly string ADDITIONAL_MECH_STAT = "BiggerDrops_AdditionalMechSlots";
@@ -14,8 +14,8 @@ namespace BiggerDrops {
     public static readonly string MAX_TONNAGE_STAT = "BiggerDrops_MaxTonnage";
     public static readonly string LANCES_CONFIG_STAT_NAME = "BiggerDrops_LancesLayout";
     public static readonly string CU_VEHICLE_STAT_NAME = "BiggerDrops_CuVehicleCount";
-    public static readonly int MAX_CU_DROP_SIZE = 12;
-    public static readonly int MAX_CU_ADDITINAL_MECH_SLOTS = 8;
+    public int MAX_CU_DROP_SIZE = 12;
+    public int MAX_CU_ADDITINAL_MECH_SLOTS = 8;
 
         public bool debugLog { get; set; }
     public bool debugLanceLoadout { get; set; }

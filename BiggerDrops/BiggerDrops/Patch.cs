@@ -198,7 +198,7 @@ namespace BiggerDrops {
                 {
                     if (BiggerDrops.settings.limitFlashpointDrop)
                     {
-                        maxUnits = 4;
+                        maxUnits = Math.Min(4, contract.Override.maxNumberOfPlayerUnits);
                     }
                 }
                 if (BiggerDrops.settings.respectFourDropLimit)
