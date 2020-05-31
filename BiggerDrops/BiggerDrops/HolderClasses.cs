@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 using BattleTech;
+using System;
 
 namespace BiggerDrops {
   public class Settings {
@@ -14,6 +15,7 @@ namespace BiggerDrops {
     public static readonly string MAX_TONNAGE_STAT = "BiggerDrops_MaxTonnage";
     public static readonly string LANCES_CONFIG_STAT_NAME = "BiggerDrops_LancesLayout";
     public static readonly string CU_VEHICLE_STAT_NAME = "BiggerDrops_CuVehicleCount";
+    public static readonly int MIN_CU_MECHBAYS = 3;
     public int MAX_CU_DROP_SIZE = 12;
     public int MAX_CU_ADDITINAL_MECH_SLOTS = 8;
 
@@ -146,6 +148,7 @@ namespace BiggerDrops {
             lanceCount++;
             vCount -= 4;
         }
+        int iBayCount = Math.Max(MIN_CU_MECHBAYS, companyStats.GetValue<int>("MechBayPods"));
         if (debugLanceLoadout) {
           CustomUnitsAPI.setLancesCount(3);
           CustomUnitsAPI.setLanceData(0, 6, 5, false);
@@ -173,6 +176,7 @@ namespace BiggerDrops {
           }
           CustomUnitsAPI.setOverallDeployCount(System.Math.Min(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalMechSlots + BiggerDrops.settings.vehicleCount, MAX_CU_DROP_SIZE));
           CustomUnitsAPI.playerControl(DEFAULT_MECH_SLOTS + BiggerDrops.settings.additinalPlayerMechSlots, BiggerDrops.settings.vehicleCount);
+          CustomUnitsAPI.setMechBayCount(iBayCount);
         }
       }
     }

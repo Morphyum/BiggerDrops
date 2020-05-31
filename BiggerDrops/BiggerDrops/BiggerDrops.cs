@@ -13,11 +13,13 @@ namespace BiggerDrops {
     private static MethodInfo m_setLanceData = null;
     private static MethodInfo m_setOverallDeployCount = null;
     private static MethodInfo m_playerControl = null;
+    private static MethodInfo m_setMechBayCount = null;
     public static bool Detected() { return CustomUnits_detected; }
     public static void setLancesCount(int count) { if (m_setLancesCount != null) { m_setLancesCount.Invoke(null, new object[] { count }); }; }
     public static void setLanceData(int lanceid, int size, int allow, bool is_vehicle) { if (m_setLanceData != null) { m_setLanceData.Invoke(null, new object[] { lanceid, size, allow, is_vehicle }); }; }
     public static void setOverallDeployCount(int count) { if (m_setOverallDeployCount != null) { m_setOverallDeployCount.Invoke(null, new object[] { count }); }; }
     public static void playerControl(int mechs, int vehicles) { if (m_playerControl != null) { m_playerControl.Invoke(null, new object[] { mechs, vehicles }); }; }
+    public static void setMechBayCount(int count) { if (m_setMechBayCount != null) { m_setMechBayCount.Invoke(null, new object[] { count }); }; }
     public static void CustomUnitsDetected() {
       Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
       Logger.M.TWL(0, "CustomUnitsAPI.CustomUnitsDetected");
@@ -35,6 +37,8 @@ namespace BiggerDrops {
             if (m_setOverallDeployCount == null) { Logger.M.WL(2, "setOverallDeployCount not found"); } else { Logger.M.WL(2, "setOverallDeployCount found"); }
             m_playerControl = helperType.GetMethod("playerControl", BindingFlags.Static | BindingFlags.Public);
             if (m_playerControl == null) { Logger.M.WL(2, "playerControl not found"); } else { Logger.M.WL(2, "playerControl found"); }
+            m_setMechBayCount = helperType.GetMethod("BaysCount", BindingFlags.Static | BindingFlags.Public);
+            if (m_setMechBayCount == null) { Logger.M.WL(2, "BaysCount not found"); } else { Logger.M.WL(2, "BaysCount found"); }
             CustomUnits_detected = true;
             break;
           }
